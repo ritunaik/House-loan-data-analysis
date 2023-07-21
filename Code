@@ -1,0 +1,72 @@
+
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+# Load the loan data from "loan_data.csv"
+loan_data = pd.read_csv("loan_data.csv")
+
+# Transform categorical values into numerical values
+label_encoder = LabelEncoder()
+loan_data['purpose'] = label_encoder.fit_transform(loan_data['purpose'])
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Explore distribution of target variable
+sns.countplot(x='credit.policy', data=loan_data)
+plt.show()
+
+# Explore correlation between features
+correlation = loan_data.corr()
+sns.heatmap(correlation, annot=True)
+plt.show()
+
+
+# Drop features with strong correlation
+correlation_threshold = 0.8
+highly_correlated = set()
+for i in range(len(correlation.columns)):
+    for j in range(i):
+        if abs(correlation.iloc[i, j]) > correlation_threshold:
+            colname = correlation.columns[i]
+            highly_correlated.add(colname)
+
+loan_data.drop(highly_correlated, axis=1, inplace=True)
+
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# Load the input data from "input.csv"
+input_data = pd.read_csv("input.csv")
+
+# Load the output data from "output.csv"
+output_data = pd.read_csv("output.csv")
+
+# Split the data into training and test sets
+X = loan_data.drop('credit.policy', axis=1)
+y = loan_data['credit.policy']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale the numerical features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Create a deep learning model
+model = Sequential()
+model.add(Dense(64, activation='relu', input_dim=X_train_scaled.shape[1]))
+model.add(Dense(64, activation='relu'))
+model.add(Dense(1, activation='sigmoid'))
+
+# Compile and train the model
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.fit(X_train_scaled, y_train, epochs=10, batch_size=32)
+
+# Evaluate the model
+loss, accuracy = model.evaluate(X_test_scaled, y_test)
+print('Test Loss:', loss)
+print('Test Accuracy:', accuracy)
+ 
